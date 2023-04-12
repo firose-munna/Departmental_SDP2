@@ -1,0 +1,188 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using MySql.Data.MySqlClient;
+using System.Data.SqlClient;
+
+namespace smart_department
+{
+    public partial class Form_admin_update_SlideRecord : Form
+    {
+        public Form_admin_update_SlideRecord()
+        {
+            InitializeComponent();
+            Fill_Combo_Intake_Select();
+        }
+        private int serial;
+        void Fill_Combo_Intake_Select()
+        {
+            MySqlConnection con = new MySqlConnection(AppSettings.ConnectionString());
+            string query = "select * from intake;";
+            MySqlCommand cmd = new MySqlCommand(query, con);
+            MySqlDataReader dt_reader;
+
+            try
+            {
+                con.Open();
+                dt_reader = cmd.ExecuteReader();
+
+                while (dt_reader.Read())
+                {
+                    string sName = dt_reader.GetString("Intake_No");
+                    comboBox_admin_update_SlideRecord_intake_select.Items.Add(sName);
+
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            con.Close();
+        }
+        private void btn_log_out_Click(object sender, EventArgs e)
+        {
+            Form_main fm2 = new Form_main();
+
+            fm2.Show();
+            MessageBox.Show("Successfully Log out");
+            this.Hide();
+        }
+
+        private void btn_back_fm12_show_Click(object sender, EventArgs e)
+        {
+            Form_admin_update fm30 = new Form_admin_update();
+
+            fm30.Show();
+            this.Hide();
+        }
+
+        private void dataGridView_admin_update_SlideRecord_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            serial = Convert.ToInt32(dataGridView_admin_update_SlideRecord.SelectedRows[0].Cells[0].Value);
+
+            txt_admin_update_SlideRecord_intake.Text = dataGridView_admin_update_SlideRecord.SelectedRows[0].Cells[1].Value.ToString();
+            txt_admin_update_SlideRecord_sec.Text = dataGridView_admin_update_SlideRecord.SelectedRows[0].Cells[2].Value.ToString();
+            txt_admin_update_SlideRecord_Perform_date.Text = dataGridView_admin_update_SlideRecord.SelectedRows[0].Cells[3].Value.ToString();
+            txt_admin_update_SlideRecord_course_id.Text = dataGridView_admin_update_SlideRecord.SelectedRows[0].Cells[4].Value.ToString();
+            txt_admin_update_SlideRecord_slidelink.Text = dataGridView_admin_update_SlideRecord.SelectedRows[0].Cells[5].Value.ToString();
+            txt_admin_update_SlideRecord_recordlink.Text = dataGridView_admin_update_SlideRecord.SelectedRows[0].Cells[6].Value.ToString();
+            
+        }
+        private void GetSlideRecord()
+        {
+            MySqlConnection con = new MySqlConnection(AppSettings.ConnectionString());
+            con.Open();
+            MySqlCommand cmd;
+            cmd = con.CreateCommand();
+            cmd.CommandText = "SELECT * FROM slide_and_record where Intake_No = '" + comboBox_admin_update_SlideRecord_intake_select.Text + "';";
+
+            MySqlDataReader sdr = cmd.ExecuteReader();
+            DataTable dt = new DataTable();
+            dt.Load(sdr);
+            con.Close();
+            dataGridView_admin_update_SlideRecord.DataSource = dt;
+        }
+        private void bnt_admin_update_SlideRecord_go_Click(object sender, EventArgs e)
+        {
+            GetSlideRecord();
+        }
+
+        private void btn_admin_update_SlideRecord_updateGo_Click(object sender, EventArgs e)
+        {
+            if (this.serial != 0)
+            {
+                MySqlConnection con = new MySqlConnection(AppSettings.ConnectionString());
+                con.Open();
+                MySqlCommand cmd;
+                cmd = con.CreateCommand();
+
+                cmd.CommandText = "UPDATE slide_and_record SET Intake_No = @intake, Sec = @section, Record_Date = @P_date, Course_ID=@C_ID, Slide_Link=@slide, Record_Video = @record WHERE Serial = @serial_NO";
+                cmd.Parameters.AddWithValue("@serial_NO", this.serial);
+                cmd.Parameters.AddWithValue("@intake", txt_admin_update_SlideRecord_intake.Text);
+                cmd.Parameters.AddWithValue("@section", txt_admin_update_SlideRecord_sec.Text);
+                cmd.Parameters.AddWithValue("@P_date", txt_admin_update_SlideRecord_Perform_date.Text);
+                cmd.Parameters.AddWithValue("@C_ID", txt_admin_update_SlideRecord_course_id.Text);
+                cmd.Parameters.AddWithValue("@slide", txt_admin_update_SlideRecord_slidelink.Text);
+                cmd.Parameters.AddWithValue("@record", txt_admin_update_SlideRecord_recordlink.Text);
+                
+
+                cmd.ExecuteNonQuery();
+                con.Close();
+                MessageBox.Show("Data successfully updated.");
+                GetSlideRecord();
+
+                txt_admin_update_SlideRecord_intake.Clear();
+                txt_admin_update_SlideRecord_sec.Clear();
+                txt_admin_update_SlideRecord_Perform_date.Clear();
+                txt_admin_update_SlideRecord_course_id.Clear();
+                txt_admin_update_SlideRecord_slidelink.Clear();
+                txt_admin_update_SlideRecord_recordlink.Clear();
+                
+
+
+
+            }
+            else
+            {
+                MessageBox.Show("Please, select a Row.");
+            }
+        }
+
+        private void btn_admin_update_SlideRecord_deleteGo_Click(object sender, EventArgs e)
+        {
+            if (this.serial != 0)
+            {
+                MySqlConnection con = new MySqlConnection(AppSettings.ConnectionString());
+                con.Open();
+                MySqlCommand cmd;
+                cmd = con.CreateCommand();
+
+                cmd.CommandText = "DELETE FROM slide_and_record WHERE Serial=@serial_NO";
+                cmd.Parameters.AddWithValue("@serial_NO", this.serial);
+
+                cmd.ExecuteNonQuery();
+
+
+                con.Close();
+                MessageBox.Show("Data successfully updated.");
+
+                MySqlConnection con1 = new MySqlConnection(AppSettings.ConnectionString());
+                con1.Open();
+                MySqlCommand cmd1;
+                cmd1 = con1.CreateCommand();
+                cmd1.CommandText = "ALTER TABLE slide_and_record DROP Serial";
+                cmd1.ExecuteNonQuery();
+                con1.Close();
+
+                MySqlConnection con2 = new MySqlConnection(AppSettings.ConnectionString());
+                con2.Open();
+                MySqlCommand cmd2;
+                cmd2 = con2.CreateCommand();
+                cmd2.CommandText = "ALTER TABLE slide_and_record ADD Serial int not null auto_increment primary key first";
+                cmd2.ExecuteNonQuery();
+                con2.Close();
+
+
+                GetSlideRecord();
+
+                txt_admin_update_SlideRecord_intake.Clear();
+                txt_admin_update_SlideRecord_sec.Clear();
+                txt_admin_update_SlideRecord_Perform_date.Clear();
+                txt_admin_update_SlideRecord_course_id.Clear();
+                txt_admin_update_SlideRecord_slidelink.Clear();
+                txt_admin_update_SlideRecord_recordlink.Clear();
+
+            }
+            else
+            {
+                MessageBox.Show("Please, select a Row.");
+            }
+        }
+    }
+}
